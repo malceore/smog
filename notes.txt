@@ -1,0 +1,6 @@
+Looks like we should just start this from scratch we will need to:
+\- 1. Get three.js loaded into browser wiht a single cube
+\- 2. drive cube with arrow keys
+\- 3. have it ping the game server with coordinates.
+4. figure out networking with client side prediction.
+ 
