@@ -10,6 +10,10 @@ from autobahn.twisted.websocket import WebSocketServerFactory, WebSocketServerPr
 from autobahn.twisted.resource import WebSocketResource
 
 #Globals
+DEBUG=False
+def dbprint(self, contents):
+	if DEBUG:
+		print(contents)
 
 #
 #   Main Server Loop

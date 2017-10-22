@@ -3,4 +3,31 @@ Looks like we should just start this from scratch we will need to:
 \- 2. drive cube with arrow keys
 \- 3. have it ping the game server with coordinates.
 4. figure out networking with client side prediction.
- 
+	*Okay so we are going to record requests with numbers, ones from any player
+	we will have a function called reconcile that will check things before
+	returning server authoritiative state back to the players. Number of 
+	request is used when players hit things at close times. Server interpolates
+	between requests and last known state.
+	*Okay so internet is now saying we want to queue up all server input and 
+	then have the server make sense and send out corrections in standardized 
+	intervals.
+	*But during so we can send out regular updates that keep movement of other
+	players smooth.
+	*Lastly we need to compensate for lag by giving everyone a certain amount of lag.
+5. So basically we need to build an entity based system. Which means that we hold a list of entities on the server that are, enemies, player units, cameras, etc.
+	They will be like players but also have a value that says which player owns them and that will be checked by server every tick to make sure there are no
+	cheaters. It should be stored on server and client as a map, packet contents can easily be filtered through and interface and server can use list of rules
+	to make interpolations.
+	Game play in the browser should probably be two buttons, one to create and one to delete 'entities' which are just cubes that spawn. They change color when 
+	hovered over and when left-clicked are listed as your selection, right click somewhere to move them. We can add physics to keep them on some kind of plain 
+	maybe?
+	From there we just have to keep track of the entities on the server and broadcast changes in steps. After we have those basics done we can add in the server
+	checks, we will have one in a function for every tick with some fast simple rules and one in a function for every couple of ticks which queues up a bunch of 
+	input in the background and then checks it out with a long list of rules before issuing it as an update. RECONCILES IN SUPREME COMMANDER USED 100ms
+
+5. So first we need the JS to do what is descirbed above.
+6. Then we send that data back to the server and get nothing useful back.
+7. Then we start using the time stamps and simple checks, listing entities and who owns them.
+8. then we get something useful back and update the screen with it.
+*By this point we have a simpe game where you can spawn and delete entities on either screen and it will update on all others.
+
