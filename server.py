@@ -1,4 +1,5 @@
-import sys
+# Regular Import 
+import sys, json
 
 # Twisted Imports
 from twisted.internet import reactor
@@ -21,9 +22,14 @@ def dbprint(self, contents):
 class GameServerProtocol(WebSocketServerProtocol):
     def onConnect(self, request):
         print("Client connecting: {}".format(request.peer))
+        print("Sending message...")
+        #self.sendMessage("hello")	
 
     def onOpen(self):
-        print("WebSocket connection open.")
+        #self.sendMessage(
+        MISSION = '''mission|{"name":"Test","entities":[{"type":"cube","x":6,"y":10,"z":-65},{"type":"cube","x":10,"y":10,"z":145}],"height_map":"61.png"}'''
+        self.sendMessage(MISSION)
+        print("WebSocket connection open")
 
     def onMessage(self, payload, isBinary):
         if isBinary:
