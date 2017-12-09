@@ -1,3 +1,68 @@
+
+
+So I had trouble getting the template to work for me, our main objective is to create a wrapper
+object around the websocket class that can store the player's async information neatly.
+
+
+Okay so we need it to use out Game Server socket protocal instead of theirs.
+
+
+
+Next we need to make changes that correct on the client side.
+Then we need to make every third thread an AUTH thread that changes the second cubes position to
+center or something.
+Finally we need to design that arbiter wrapper class around everything and reimplement.
+
+
+I am correct I can make the autobahn websocket threads refer to an array of 'clients' in the super
+class(Factory) like so:
+
+
+    def onOpen(self):
+        self.factory.register(self)
+
+    ---
+
+    def __init__(self, url):
+        WebSocketServerFactory.__init__(self, url)
+        self.clients = []
+        self.tickcount = 0
+        self.tick()
+
+    
+In this example they basically have 'BroadcastServerFactory' spin up a new websocket server when it
+inits and passes it the URL everyone looks for. When a new guy connects he
+registers(takes 'this' websocket thread and puts it into an array in the BroadcastServer) and when
+he broadcasts to all players he just iterates through and can use sendMessage. So we are just going
+to rip it off and construct using server as an external file.
+
+
+     Resources
+https://stackoverflow.com/questions/18899515/writing-an-interactive-client-with-twisted-autobahn-websockets
+This might be nice, if you scroll down will show you how to make a wrapper around websocket so
+arbiter can access their values and keep track across multiple sockets.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Next we need to take in input and send it back out from the server as intervals.
+    so we need a python thread and a queue of changes. So we will broadcast changes
+    in one thread for now just to this one socket, later we will handle that within 
+    a threaded object to decouple all player communication.
+
+
+
 Looks like we should just start this from scratch we will need to:
 \- 1. Get three.js loaded into browser wiht a single cube
 \- 2. drive cube with arrow keys

@@ -6,8 +6,9 @@ var geometry, material, plane, cube, selection=null;
 var isMoving = false;
 var DEBUG = true; function dbPrint(contents){ if(DEBUG){console.log(contents);}};0
 var ENTITIES = []
-var PREV_ENTITES = null;
-var UPDATE_INTERVAL;
+var SOCKET = 8080;
+var UPDATE_THREAD;
+var UPDATE_INTERVAL = 500;
 var raycaster = new THREE.Raycaster();
 var mouse = new THREE.Vector2();
 var MISSION = { 
@@ -36,16 +37,16 @@ var MISSION = {
 //
 window.addEventListener("load", function() {
     
-    // create websocket instance
-    var mySocket = new WebSocket("ws://localhost:8080/ws");
+    // init websocket 
+    SOCKET = new WebSocket("ws://192.168.0.100:" + SOCKET + "/ws");
     
-    mySocket.onconnect = function (event) {
+    SOCKET.onconnect = function (event) {
         mySocket.send("Hello, my name is client");
         dbPrint("sending hello...");
     };
 
     // add event listener reacting when message is received
-    mySocket.onmessage = function (event) {
+    SOCKET.onmessage = function (event) {
     	// Parse out what we recieved and deal with contents
         data = event.data.split("|"); 
 
@@ -58,13 +59,11 @@ window.addEventListener("load", function() {
 			mySocket.close();
 			//Game is over champ.
         }else if(data[0] === "mission"){
+
 	        MISSION = jQuery.parseJSON(data[1])
 	        loadMission();
-	        PREV_ENTITIES = ENTITIES[0].position.x;
-	        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>" +  PREV_ENTITIES);
-
-	        //UPDATE_INTERVAL = setInterval(packageChanges, 500);
-
+	        //currToPrev();
+	        UPDATE_THREAD = setInterval(packageChanges, UPDATE_INTERVAL);
 	    }else{
 	    	console.log("Unknown message type, discarding...");
 	    }
@@ -75,42 +74,45 @@ window.addEventListener("load", function() {
 
 // Basically run in an interval, checks changes since last update and sends them to the server for processing
 function packageChanges(){
-	if(PREV_ENTITIES != null){
-		//console.log("Does this work?");
-		/* Find longest
-		var longestLength = Math.max(PREV_ENTITIES.length, ENTITIES.length);
-		for (var i = 0; i < longestLength; i++) {
-			console.log("Does this work?");
-			// if prev is shorter than current, new entites need to be added.
-			if(i > PREV_ENTITIES.length){
-				dbPrint("Add every things in this category as change.");
-			}else{
-				//compare index of both arrays for changes, 
-				//if names are different than we can assume that variable in prev is gone.
-				if(PREV_ENTITIES[i].name === ENTITIES[i].name){
-					// then we can check x, y and z for changes.
-					console.log(PREV_ENTITIES[i].position.x +":" + ENTITIES[i].position.x);
-					if(PREV_ENTITIES[i].position.x != ENTITIES[i].position.x){
-						dbPrint("x change.");
-					}
-					if(PREV_ENTITIES[i].position.y != ENTITIES[i].position.y){
-						dbPrint("y change.");
-					}
-					if(PREV_ENTITIES[i].position.z != ENTITIES[i].position.z){
-						dbPrint("z change.");
-					}
-				}
+	//console.log("Does this work?");
+	// Find longest
+	//var posChanges = {};
+	var accum = "";
+	//var longestLength = Math.max(PREV_ENTITIES.length, ENTITIES.length);
+	for (var i = 0; i < ENTITIES.length; i++) {
+		var changes = false;
+		// then we can check x, y and z for changes.
+		if(ENTITIES[i].prevPos.x !== ENTITIES[i].position.x){
+		    //dbPrint("x change.");
+			accum += (ENTITIES[i].prevPos.x - ENTITIES[i].position.x) + ", ";
+			changes = true
+		}
+		if(ENTITIES[i].prevPos.y !== ENTITIES[i].position.y){
+		    //dbPrint("y change.");
+			accum += (ENTITIES[i].prevPos.y - ENTITIES[i].position.y) + ", ";
+			changes = true;
+		}
+		if(ENTITIES[i].prevPos.z !== ENTITIES[i].position.z){
+		    //dbPrint("z change.");
+			accum += (ENTITIES[i].prevPos.z - ENTITIES[i].position.z) + ", ";
+			changes = true;
+		}
 
-			}
-			// if prev is longer than current, entites have been remove, but we already know which ones as we compare.
-		}*/
+		// Now we just need to list what object that changed.
+		if(changes){
 
-	}else{
-		console.log("ERROR >>> CHECKED ENTITES WERE NULL!!!");
-	}
+			accum += ENTITIES[i].name + "|"; 
+		}
 
-	//PREV_ENTITIES = ENTITIES;
-	//dbPrint("Packaging changes...");
+		// If changes need to be added.
+		ENTITIES[i].prevPos.x = ENTITIES[i].position.x;
+		ENTITIES[i].prevPos.y = ENTITIES[i].position.y;
+		ENTITIES[i].prevPos.z = ENTITIES[i].position.z;	
+	}	
+	dbPrint("Packaging changes... ") 
+	//dbprint(accum);
+	//send off changes to server changes;
+	SOCKET.send("CHANGES" + accum);
 }
 
 
@@ -201,6 +203,7 @@ function spawnEntity(type, x, y, z){
 			dbPrint("Spawning generic cube!");
 			var geometry = new THREE.BoxGeometry( 20, 20, 20 );
 			for (var i = 0; i < geometry.faces.length; i += 2) {
+
 				var hex = Math.random() * 0xffffff;
 				geometry.faces[ i ].color.setHex( hex );
 				geometry.faces[ i + 1 ].color.setHex( hex );
@@ -210,6 +213,10 @@ function spawnEntity(type, x, y, z){
 			cube.position.x = x;
 			cube.position.y = y;
 			cube.position.z = z;
+			cube.prevPos = {};
+			cube.prevPos.x = x;
+			cube.prevPos.y = y;
+			cube.prevPos.z = z;
 			cube.name ="CUBE_#" + ENTITIES.length;
 			scene.add( cube );
 			ENTITIES.push(cube);
@@ -315,6 +322,7 @@ function loadMission(){
 	console.log("Loading mission :" + MISSION.name)
 	for(var i=0; i<MISSION.entities.length ;i++){
 		spawnEntity(MISSION.entities[i].type, MISSION.entities[i].x, MISSION.entities[i].y, MISSION.entities[i].z);
+		console.log("Load mission >> " + MISSION.entities[i].type + " " + MISSION.entities[i].x + " " + MISSION.entities[i].y + " "+ MISSION.entities[i].z);
 	}
 }
 
