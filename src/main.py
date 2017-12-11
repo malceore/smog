@@ -1,3 +1,7 @@
+#
+# Main class, run uses this and sets up server for game. Should be able to resolve
+#	localhost:8080/index.html and see the game in the browser. 
+#
 # Regular Import 
 import sys
 
@@ -5,30 +9,34 @@ import sys
 from twisted.internet import reactor
 from twisted.web.static import File
 from twisted.web.server import Site
+from twisted.python import log
 
 # Autoban imports
-from autobahn.twisted.websocket import WebSocketServerFactory, WebSocketServerProtocol
+from autobahn.twisted.websocket import WebSocketServerFactory
 from autobahn.twisted.resource import WebSocketResource
 
-# Local Imports
-import GameServerProtocol
+# Local Imports FECK
+from GameServerProtocol import *
+from Arbiter import *
+
+# Logging
+# log.startLogging(sys.stdout)
 
 # Setting up connections
 factory = WebSocketServerFactory(u"ws://127.0.0.1:8080")
 factory.protocol = GameServerProtocol
-factory.clients = []
-# self.factory.clients.append(self) << from: https://stackoverflow.com/questions/31756704/twisted-python-server-port-already-in-use
-resource = WebSocketResource(factory)
-# Static file server seving index.html as root
-root = File(".")
 
-# websockets resource on "/ws" path
+# Setting up arbiter who basically runs the show within it's gameLoop.
+factory.arbiter = Arbiter()
+factory.arbiter.run()
+
+# Websocket and webserver setup.
+resource = WebSocketResource(factory)
+root = File(".")
 root.putChild(u"ws", resource)
 site = Site(root)
 reactor.listenTCP(8080, site)
 
 # Kick those tires and light those fires...
 reactor.run()
-#reactor.stop()
 print("Exiting..")
-reactor.stop()

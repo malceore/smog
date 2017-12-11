@@ -7,6 +7,7 @@ var isMoving = false;
 var DEBUG = true; function dbPrint(contents){ if(DEBUG){console.log(contents);}};0
 var ENTITIES = []
 var SOCKET = 8080;
+var IP = "192.168.0.100"
 var UPDATE_THREAD;
 var UPDATE_INTERVAL = 500;
 var raycaster = new THREE.Raycaster();
@@ -38,7 +39,7 @@ var MISSION = {
 window.addEventListener("load", function() {
     
     // init websocket 
-    SOCKET = new WebSocket("ws://192.168.0.100:" + SOCKET + "/ws");
+    SOCKET = new WebSocket("ws://" + IP + ":" + SOCKET + "/ws");
     
     SOCKET.onconnect = function (event) {
         mySocket.send("Hello, my name is client");

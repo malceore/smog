@@ -1,9 +1,24 @@
+Left off having gotten it sending out updates/changes made by other players. 
+	Next need to make those changes actually update the board.
+-
+1. Now that we got clients list and arbiter broken out we need to extend the arbiter
+function, renaming it in the process to look for changes and send them off to 
+arbiter object. 
+
+2. Then we need to get it so the arbiter has a worldview object that he can make
+changes to and check if certain things are possible. We will let all moves at first
+and only have one check function. But a second, harder one will be added and put in
+another thread for later.
+
+How to store worldview -> However we store it in Js is obvious awnser. response funciton
+will send back down websocket new changes.
 
 
+--
 So I had trouble getting the template to work for me, our main objective is to create a wrapper
 object around the websocket class that can store the player's async information neatly.
 
-
+--
 Okay so we need it to use out Game Server socket protocal instead of theirs.
 
 

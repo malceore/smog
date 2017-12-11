@@ -1,0 +1,8 @@
+#!/bin/bash
+function kill_all_humans {
+    # Kill all subprocesses (all processes in the current process group)
+    #kill $(ps aux | grep 'python ${1}' | awk '{ print $2 }')
+    pkill -9 -f src/main.py
+}
+trap kill_all_humans SIGINT SIGTERM EXIT
+python ${1}
