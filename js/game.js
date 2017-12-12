@@ -55,26 +55,29 @@ window.addEventListener("load", function() {
         	console.log("Hello recieved!")
         }else if(data[0] === "update"){
         	updateMap(data[1]);
-		}else if(data[0] === "end"){
-			clearInterval(UPDATE_INTERVAL);
-			mySocket.close();
-			//Game is over champ.
+	}else if(data[0] === "end"){
+		clearInterval(UPDATE_INTERVAL);
+		mySocket.close();
+		//Game is over champ.
         }else if(data[0] === "mission"){
 
 	        MISSION = jQuery.parseJSON(data[1])
 	        loadMission();
 	        //currToPrev();
-	        UPDATE_THREAD = setInterval(packageChanges, UPDATE_INTERVAL);
-	    }else{
+	        //UPDATE_THREAD = setInterval(packageChanges, UPDATE_INTERVAL);
+        }else if(data[0] == "tick"){
+		// We are being requested for an update.
+		packageChanges(data[1]);
+	}else{
 	    	console.log("Unknown message type, discarding...");
-	    }
+	}
 
         dbPrint("What I heard: " + event.data);
     };
 });
 
 // Basically run in an interval, checks changes since last update and sends them to the server for processing
-function packageChanges(){
+function packageChanges(tick){
 	//console.log("Does this work?");
 	// Find longest
 	//var posChanges = {};
@@ -102,7 +105,7 @@ function packageChanges(){
 		// Now we just need to list what object that changed.
 		if(changes){
 
-			accum += ENTITIES[i].name + "|"; 
+			accum += ENTITIES[i].name + "/"; 
 		}
 
 		// If changes need to be added.
@@ -113,9 +116,9 @@ function packageChanges(){
 	dbPrint("Packaging changes... ") 
 	//dbprint(accum);
 	//send off changes to server changes;
-	SOCKET.send("CHANGES" + accum);
+	console.log(tick + "|" + accum)
+	SOCKET.send(tick + "|" + accum);
 }
-
 
 
 //
