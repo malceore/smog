@@ -25,21 +25,22 @@ class GameServerProtocol(WebSocketServerProtocol):
     # Save only new changes and send them up to the arbiter.
     def filterChanges(self):
         # empty strings return false, pass on items inside
-        if self.changeCache:
-            # Basically the first thing should be the tick this is and
-            #       the second half are the related changes.    
-            total = self.changeCache.split("|")
-            changes = total[1].split("/")
+        if 1:
+            changes = self.changeCache.split(":")
+            #print("DEBUG changeCache: " + self.changeCache)
             # Reset cache..
             self.changeCache = ""
-            acum = []
-            for values in changes:
-                temp = values.split()
-                if len(temp) >= 3:
-                    if temp[2] not in acum:
-                        acum = acum + temp
-            finalAcum = {'tick':int(total[0]), 'changes':acum}
-            return finalAcum
+            acum = {}
+            for entries in changes:
+                # tick | x | y | entity 
+                list = entries.split(",")
+                if len(list) > 3: 
+                    # That list isn't empty (or later, malformed) We build a map 
+                    #	with the name as the key.
+                    #acum[list[4]]=list
+                    #print("DEBUGG >> " + str(list) + ", " + str(entries))
+                    acum[list[4]]=entries   
+            return acum
         return None
 
     def onConnect(self, request):
@@ -57,10 +58,10 @@ class GameServerProtocol(WebSocketServerProtocol):
         else:
             input = payload.decode('utf8')
             # Changes were received from a player.
-            if 1 < len(input.split('|')):
-                # Put them on oldest first so we can just skip older changes that have been
-                # overwritten.
-                self.changeCache = input + self.changeCache
+            #if 1 < len(input.split('|')):
+            # Put them on oldest first so we can just skip older changes that have been
+            # overwritten.
+            self.changeCache = input + self.changeCache
 
     def onClose(self, wasClean, code, reason):
         print("WebSocket connection closed: {}".format(reason))

@@ -50,7 +50,7 @@ window.addEventListener("load", function() {
     SOCKET.onmessage = function (event) {
     	// Parse out what we recieved and deal with contents
         data = event.data.split("|"); 
-
+        // dbPrint("What I heard: " + event.data)
         if(data[0] === "hello"){
         	console.log("Hello recieved!")
         }else if(data[0] === "update"){
@@ -71,16 +71,11 @@ window.addEventListener("load", function() {
 	}else{
 	    	console.log("Unknown message type, discarding...");
 	}
-
-        dbPrint("What I heard: " + event.data);
     };
 });
 
 // Basically run in an interval, checks changes since last update and sends them to the server for processing
 function packageChanges(tick){
-	//console.log("Does this work?");
-	// Find longest
-	//var posChanges = {};
 	var accum = "";
 	//var longestLength = Math.max(PREV_ENTITIES.length, ENTITIES.length);
 	for (var i = 0; i < ENTITIES.length; i++) {
@@ -88,24 +83,24 @@ function packageChanges(tick){
 		// then we can check x, y and z for changes.
 		if(ENTITIES[i].prevPos.x !== ENTITIES[i].position.x){
 		    //dbPrint("x change.");
-			accum += (ENTITIES[i].prevPos.x - ENTITIES[i].position.x) + ", ";
+			//accum += (ENTITIES[i].prevPos.x - ENTITIES[i].position.x) + ", ";
 			changes = true
 		}
 		if(ENTITIES[i].prevPos.y !== ENTITIES[i].position.y){
 		    //dbPrint("y change.");
-			accum += (ENTITIES[i].prevPos.y - ENTITIES[i].position.y) + ", ";
+			//accum += (ENTITIES[i].prevPos.y - ENTITIES[i].position.y) + ", ";
 			changes = true;
 		}
 		if(ENTITIES[i].prevPos.z !== ENTITIES[i].position.z){
 		    //dbPrint("z change.");
-			accum += (ENTITIES[i].prevPos.z - ENTITIES[i].position.z) + ", ";
+			//accum += (ENTITIES[i].prevPos.z - ENTITIES[i].position.z) + ", ";
 			changes = true;
 		}
 
 		// Now we just need to list what object that changed.
 		if(changes){
-
-			accum += ENTITIES[i].name + "/"; 
+			accum = ENTITIES[i].position.x + "," + ENTITIES[i].position.y + "," + ENTITIES[i].position.z + ",";
+			accum += tick + ","  + ENTITIES[i].name + ":"; 
 		}
 
 		// If changes need to be added.
@@ -113,11 +108,10 @@ function packageChanges(tick){
 		ENTITIES[i].prevPos.y = ENTITIES[i].position.y;
 		ENTITIES[i].prevPos.z = ENTITIES[i].position.z;	
 	}	
-	dbPrint("Packaging changes... ") 
-	//dbprint(accum);
+	//dbPrint("Packaging changes... ") 
 	//send off changes to server changes;
-	console.log(tick + "|" + accum)
-	SOCKET.send(tick + "|" + accum);
+	//console.log(accum)
+	SOCKET.send(accum);
 }
 
 
@@ -160,7 +154,6 @@ function keyUpHandler(event){
 function onMouseMove( event ) {
 	mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
 	mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
-	//console.log(("x:"+mouse.x + ", y:"+mouse.y));
 	raycaster.setFromCamera( mouse, camera );
 	//var intersects = raycaster.intersectObjects( ENTITIES );
 	var intersects = raycaster.intersectObjects( scene.children );
@@ -178,19 +171,16 @@ function onMouseDown( event ) {
 				// We want to check if selection is null and if not make the collision with the ground the new x,z?
 				//dbPrint("That's the floor!");
 				if(selection !== null){
-					//console.log(intersects[i].point);
 					selection.position.x = intersects[i].point.x
 					selection.position.z = intersects[i].point.z
 				}
 			}else{
 				selection=intersects[i].object;
-				//console.log("clicked: " + selection.name)
 			}
 		}
 	}
 	// If nothing is clicked on
 	if(intersects.length == 0){
-		//console.log("Clicked: " + null);
 		selection=null;
 	}
 }
@@ -221,7 +211,7 @@ function spawnEntity(type, x, y, z){
 			cube.prevPos.x = x;
 			cube.prevPos.y = y;
 			cube.prevPos.z = z;
-			cube.name ="CUBE_#" + ENTITIES.length;
+			cube.name ="CUBE_" + ENTITIES.length;
 			scene.add( cube );
 			ENTITIES.push(cube);
 			break;
@@ -332,7 +322,28 @@ function loadMission(){
 
 //Applies corrections from the server to entites on map.
 function updateMap(data){
-	dbPrint("Update revieved :" + data);
+	//dbPrint("Update revieved :" + data);
+	// first iterate through data given back, get affected entities.
+	//	move that entitiy to new location.
+	changes = event.data.split(":");
+	// If we start at one we can skip 'update|' that we don't need without fence post.
+	for(var i=1; i<changes.length; i++){
+		// console.log("#" + i +  " Change to be added:" + changes[i])
+		positions = changes[i].split(",")
+		for (var j=0; j<ENTITIES.length; j++) {
+			// console.log("DEBUG >>" + positions);
+			// Bad form to loop through, will refactor as map later..
+			if(ENTITIES[j].name == positions[4]){
+				//console.log("Found target for changes!");
+                                ENTITIES[j].prevPos.x = ENTITIES[j].position.x;
+                		ENTITIES[j].prevPos.y = ENTITIES[j].position.y;
+                		ENTITIES[j].prevPos.z = ENTITIES[j].position.z;
+				ENTITIES[j].position.x = parseInt(positions[0]);
+				ENTITIES[j].position.y = parseInt(positions[1]);
+				ENTITIES[j].position.z = parseInt(positions[2]);
+			}
+		}
+	}
 }
 
 

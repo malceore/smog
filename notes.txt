@@ -1,3 +1,56 @@
+Got it finally sending multiple with tick, was an indentation problem of course. Next
+we can finally get the JS updating based on player movements. Here is the protocol:
+
+update|:-20.074201314575127 32.00151807747753 16 CUBE_1:-4.965607133431334 50.72833402379234 16 CUBE_3:-8.79143548698126 58.50383408594084 16 CUBE_4
+
+* Created tiny difference, when receiving from client it is x,y,tick,name but when
+sending back to client it is x y tick name. 
+Oh I am a dumbass, looks like we only send xyz when there is a difference, instead we should send them all if there is any difference.
+
+After we can worry about addition/deletion. Thinking just add cube if we don't
+have that one, and add a DELETE in place of an X,Y,Z to remove cube.
+
+
+game.j  -11.948142509523887,10,101.47652779219337, 22, CUBE_1:
+update|:-11.94814250952388710101.47652779219337 22 CUBE_1
+TICK:69   String:-9.3706190643597011071.72818545757929 68 CUBE_1
+
+
+I think that filterChanges is onyl sending back one change, it only ever
+runs                         acum[list[3]]=list   Yeah I can prove it basically..
+I fixed that issue but now it seems that 
+Oh I'm an idiot... of course it never runs this part, whoever is first to add changes
+they will be i==1. So doens't mater how many changes I make. doesn't explain why
+acum only prints out one value though. must be lower code is broken.. hah
+
+
+Left off having some stupid thing in recieve message block me. Now erroring on something that we need to check if changes are null. :P
+
+This will be harder than I thought. We need to get changes to arbiter for EACH
+entity. Which means we should just send it most recent changes from player by entity.
+
+So if we were to rebuild this then we have a client giving us new positions that we
+	store in changeCache on the Game-websocket-Protocol. When Arbiter wants to
+	get those changes then it it calls filter changes which looks at the list
+	of changes. 
+Create a map of changes by entity by looping through changeCache, if current doesn't
+	exist in map, add it and these changes. Else check if tick for it is newer.
+	If tick is newer, then make changes, current changes. Return map of changes.
+Arbiter will go through the map for each player and add entity changes to a acum map
+	Basically does the same thing as filterChanges but acros all players. If it
+	finds that an entity is already in it's map then check to see whoes changes
+	are newer and use that one.
+Lastly it then broadcasts out that map of changes.
+
+Example new changes
+14,-88.63969725729285g,-54.44850581962629,CUBE_#0/
+14,-88.63969725729285,-54.44850581962629,CUBE_#1/
+
+
+What chage looks like:
+tick| x, y, entity name
+14|-88.63969725729285, -54.44850581962629, CUBE_#0/
+
 Left off having gotten it sending out updates/changes made by other players. 
 	Next need to make those changes actually update the board.
 -

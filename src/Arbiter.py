@@ -7,7 +7,7 @@ class Arbiter():
 
     def __init__(self):
         self.clients = {} 
-        self.interval = 2 # <-Seconds?
+        self.interval = 0.1 # 0.5 <-Seconds?
         self.tick = 1
         self.mainThread = threading.Thread(target=self.gameLoop)
 
@@ -20,20 +20,46 @@ class Arbiter():
         #print("Thread stopped...")
 
     def gameLoop(self):
-        latestChange={'tick':0, 'changes':""}
-        # Grab changes from all clients and find most recent alteration.
-        for c in self.clients:
-            change = self.clients[c]["object"].filterChanges()
-            # could use a refactor
-            if change is not None and change["tick"] > latestChange["tick"]:
-                 latestChange=change
-        # Figure out from pile of changes which ones to send out. Parse into another function probably..
-        # passJudgement()
-        # Send final changeset to be broadcast to all clients.
-        self.broadcastChanges(latestChange)
-        # Wait and loop, later will modify interval to consider above time taken.
-        time.sleep(self.interval)
-        self.gameLoop()
+    	while 1:
+	        accum = {}
+	        i=1
+	        # Grab changes from all clients and find most recent alteration.
+	        for c in self.clients:
+	            changes = self.clients[c]["object"].filterChanges()
+	            if changes != {}:
+	                # if i is the first then we can just make acum equal it to save time.
+	                if i == 1:
+	                    accum = changes
+	                    i=2
+	                # Otherwise behave as normal.
+	                else:
+	                    for key in changes.items():
+	                        #print("DEBUG key >> " + str(key[0]))
+	                        # If exists, check tick.
+	                        if key in accum.items():
+	                            if key[1][3] < acum[key][3]:
+	                                accum[value] = changes[value]
+	                                print("NEWER CHANGE!? " + key[1][3] + " vs " + acum[key][3])
+	                        # Else it's new just add it.
+	                        else:
+	                            accum[key[0]]=key[1]
+
+	        # Convert to human readable string for message passing..
+	        stringAccum=""
+	        if accum != {}:
+	            string=""    
+	            for value in accum.items():
+	               for entry in value:
+	                   string= "" + ''.join(entry)
+	                   #print("TICK:" + str(self.tick) + "   String:" + string)
+	               stringAccum = stringAccum + ":" + string  
+
+	        # Send final changeset to be broadcast to all clients.
+	        self.broadcastChanges(stringAccum)
+
+	        # Wait and loop, later will modify interval to consider above time taken.
+	        time.sleep(self.interval)
+	        #self.gameLoop()
 
     def register(self, client):
         if client not in self.clients: 
@@ -46,8 +72,8 @@ class Arbiter():
             self.clients.pop(client.peer)
 
     def broadcastChanges(self, changes):
-        print(changes)
+        # print("DEBUG CHANGES >>" + str(changes))
         for c in self.clients:
-            self.clients[c]["object"].sendMessage("update|" + ''.join(changes))
+            self.clients[c]["object"].sendMessage("update|" + str(changes))
             self.clients[c]["object"].sendMessage("tick|" + str(self.tick))
             self.tick+=1
